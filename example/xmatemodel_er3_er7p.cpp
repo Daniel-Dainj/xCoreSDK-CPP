@@ -11,6 +11,7 @@
 #include "rokae/robot.h"
 #include "print_helper.hpp"
 #include "rokae/utility.h"
+#include "env/robot_config.hpp"
 
 using namespace std;
 using namespace rokae;
@@ -20,17 +21,20 @@ ostream &os = std::cout; // print to console
 void xMateErPro7_model(xMateModel<7> &model) {
   try {
     std::array<double, 7> zeros = {0, 0, 0, 0, 0, 0, 0},
-      jointPos_in = Utils::degToRad(array<double,7>({5, 46, -10, 91, 1, -105, 11})),
-      jointVel_in = {0.3, 0.2, 0.5, 0.4, 0.1, 0.1, 0.1},
-      jointAcc_in = {1.3, 3.1, 4.1, 1.5, 1.6, 4.1, 8.1},
-      jointInit = Utils::degToRad(array<double,7>({6, 45, -9, 92, 0, -103, 10})),
-      array1 {}, array2 {}, array3 {}, array4 {};
+                          jointPos_in =
+                              Utils::degToRad(array<double, 7>({5, 46, -10, 91, 1, -105, 11})),
+                          jointVel_in = {0.3, 0.2, 0.5, 0.4, 0.1, 0.1, 0.1},
+                          jointAcc_in = {1.3, 3.1, 4.1, 1.5, 1.6, 4.1, 8.1},
+                          jointInit =
+                              Utils::degToRad(array<double, 7>({6, 45, -9, 92, 0, -103, 10})),
+                          array1{}, array2{}, array3{}, array4{};
 
     std::array<double, 16> F_TO_EE = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1},
-      EE_TO_K = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+                           EE_TO_K = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 
     print(os, "Jacobian -", model.jacobian(zeros));
-    print(os, "Jacobian given EE -", model.jacobian(zeros, F_TO_EE, EE_TO_K, SegmentFrame::endEffector));
+    print(os, "Jacobian given EE -",
+          model.jacobian(zeros, F_TO_EE, EE_TO_K, SegmentFrame::endEffector));
 
     model.getTorqueNoFriction(zeros, zeros, zeros, array1, array2, array3, array4);
     print(os, "TorqueNoFriction full -", array1);
@@ -73,20 +77,19 @@ void xMateErPro7_model(xMateModel<7> &model) {
   }
 }
 
-
 void xMateEr3_model(xMateModel<6> &model) {
   try {
-    std::array<double, 6> zeros {},
-      jointPos_in = Utils::degToRad(array<double,6>({-20, 37, 70, 0, 71, -19})),
-      jointVel_in = {0.3, 0.2, 0.5, 0.4, 0.1, 0.1},
-      jointAcc_in = {1.3, 3.1, 4.1, 1.5, 1.6, 4.1},
-      jointInit = Utils::degToRad(array<double,6>({-21, 38, 71, 0, 70, -20})),
-      array1 {}, array2 {}, array3 {}, array4 {};
+    std::array<double, 6> zeros{},
+        jointPos_in = Utils::degToRad(array<double, 6>({-20, 37, 70, 0, 71, -19})),
+        jointVel_in = {0.3, 0.2, 0.5, 0.4, 0.1, 0.1}, jointAcc_in = {1.3, 3.1, 4.1, 1.5, 1.6, 4.1},
+        jointInit = Utils::degToRad(array<double, 6>({-21, 38, 71, 0, 70, -20})), array1{},
+        array2{}, array3{}, array4{};
     std::array<double, 16> F_TO_EE = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1},
-      EE_TO_K = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
+                           EE_TO_K = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 
     print(os, "Jacobian -", model.jacobian(zeros));
-    print(os, "Jacobian given EE -", model.jacobian(zeros, F_TO_EE, EE_TO_K, SegmentFrame::endEffector));
+    print(os, "Jacobian given EE -",
+          model.jacobian(zeros, F_TO_EE, EE_TO_K, SegmentFrame::endEffector));
 
     model.getTorqueNoFriction(zeros, zeros, zeros, array1, array2, array3, array4);
     print(os, "TorqueNoFriction full -", array1);
@@ -132,19 +135,16 @@ void xMateEr3_model(xMateModel<6> &model) {
 int main() {
   bool test_Er3 = false;
   try {
-    std::string ip = "192.168.0.160";
-
-    if(test_Er3) {
-      rokae::xMateRobot robot(ip); // ****   xMate 6-axis
-      auto model = robot.model(); // 返回xMateModel类
+    if (test_Er3) {
+      rokae::xMateRobot robot(env::remoteIP, env::localIP);
+      auto model = robot.model();
       xMateEr3_model(model);
     } else {
-      rokae::xMateErProRobot robot(ip);
-      auto model = robot.model(); // 返回xMateModel类
+      rokae::xMateRobot robot(env::remoteIP, env::localIP);
+      auto model = robot.model();
       xMateErPro7_model(model);
     }
-  }  catch (const std::exception &e) {
+  } catch (const std::exception &e) {
     print(cerr, e.what());
   }
-
 }

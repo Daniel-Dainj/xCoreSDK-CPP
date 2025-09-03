@@ -14,6 +14,7 @@
 #include "Eigen/Geometry"
 #include "rokae/robot.h"
 #include "rokae/utility.h"
+#include "../env/robot_config.hpp"
 
 using namespace rokae;
 
@@ -22,10 +23,9 @@ std::ostream &os = std::cout;
 int main() {
   using namespace std;
   try {
-    std::string ip = "192.168.0.160";
     std::error_code ec;
-    rokae::StandardRobot robot(ip, "192.168.0.180");
-    robot.setOperateMode(rokae::OperateMode::automatic,ec);
+    rokae::xMateErProRobot robot(env::remoteIP, env::localIP);
+    robot.setOperateMode(rokae::OperateMode::automatic, ec);
     robot.setRtNetworkTolerance(20, ec);
     robot.setMotionControlMode(MotionControlMode::RtCommand, ec);
 
@@ -34,12 +34,13 @@ int main() {
 
     // 重置末端坐标系，与法兰重合
     std::array<double, 16> _end{};
-    Utils::postureToTransArray({0,0,0,0,0,0}, _end);
+    Utils::postureToTransArray({0, 0, 0, 0, 0, 0}, _end);
     rtCon->setEndEffectorFrame(_end, ec);
 
     // 示例程序使用机型: XB7h-R707
     // ***** 1. 从当前位置MoveJ运动到发货位置 *****
-    rtCon->MoveJ(0.4, robot.jointPos(ec), Utils::degToRad(std::array<double, 6>({0, -15, 60, 0, 45, 0})));
+    rtCon->MoveJ(0.4, robot.jointPos(ec),
+                 Utils::degToRad(std::array<double, 6>({0, -15, 60, 0, 45, 0})));
 
     // ***** 2. 圆弧运动 (X-Y平面上) *****
     CartesianPosition start, aux, target;
@@ -83,12 +84,14 @@ int main() {
     // ***** 4. 设置实时模式末端坐标系 *****
     Utils::postureToTransArray(std::array<double, 6>({0.1, 0, 0, 0, M_PI_2, 0}), _end);
     rtCon->setEndEffectorFrame(_end, ec);
-    rtCon->MoveJ(0.4, robot.jointPos(ec), Utils::degToRad(std::array<double, 6>({0, -15, 60, 0, 45, 0})));
+    rtCon->MoveJ(0.4, robot.jointPos(ec),
+                 Utils::degToRad(std::array<double, 6>({0, -15, 60, 0, 45, 0})));
 
     // 说明：实时模式的工具坐标系设置是独立的，因此不能用robot.posture(CoordinateType::endInRef)接口来获取末端位姿；
     // 下方示例直接给出设置末端坐标后的起始位姿;
-    // 或者，可以接收实时状态数据，通过robot.getStateData(RtSupportedFields::tcpPose_m, start.pos)获取
-    Utils::postureToTransArray({0.1036, 0,0.415, 0.042, -M_PI_2, -0.0424}, start.pos);
+    // 或者，可以接收实时状态数据，通过robot.getStateData(RtSupportedFields::tcpPose_m,
+    // start.pos)获取
+    Utils::postureToTransArray({0.1036, 0, 0.415, 0.042, -M_PI_2, -0.0424}, start.pos);
     target.pos = start.pos;
     target.pos[3] += 0.35;
     print(os, "MoveL start position:", start.pos, "Target:", target.pos);

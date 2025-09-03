@@ -60,9 +60,9 @@ sudo apt install cmake
 ### CMake选项
 
 * `CMAKE_INSTALL_PREFIX` - 安装路径
-* `CMAKE_BUILD_TYPE` - 编译类型 
+* `CMAKE_BUILD_TYPE` - 编译类型
 * `XCORE_LINK_SHARED_LIBS` - 是否链接动态库
-* `XCORE_USE_XMATE_MODEL` - 是否使用xMate模型库进行运动学和动力学计算。目前支持Linux x86_64和Windows 64bit。 
+* `XCORE_USE_XMATE_MODEL` - 是否使用xMate模型库进行运动学和动力学计算。目前支持Linux x86_64和Windows 64bit。
 
 ## 使用方法
 ### 硬件设置
@@ -72,7 +72,15 @@ xCore SDK通过以太网（TCP/IP）连接机器人。如果只使用非实时�
 * xCore SDK在使用前不需要通过Robot Assist打开相关功能。
 * xCoreSDK为需要授权的功能，如遇“功能未授权”的错误信息，请联系客户支持人员
 ### 接口使用
-见 *example*
+详见 *example*
+#### 增量编译
+```sh
+cmake --build build -j"$(nproc)"
+```
+#### 覆盖编译
+```sh
+cmake --install build --prefix "$HOME/rokae/xcore"
+```
 
 # License
 

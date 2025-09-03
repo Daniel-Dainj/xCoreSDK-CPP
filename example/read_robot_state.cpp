@@ -11,6 +11,7 @@
 #include <atomic>
 #include "rokae/robot.h"
 #include "print_helper.hpp"
+#include "env/robot_config.hpp"
 
 using namespace std;
 using namespace rokae;
@@ -19,7 +20,7 @@ void WaitRobot(BaseRobot *robot);
 int main() {
   try {
     using namespace RtSupportedFields;
-    xMateRobot robot("192.168.0.160", "192.168.0.100");
+    xMateRobot robot(env::remoteIP, env::localIP);
     error_code ec;
     std::ostream &os = std::cout;
     robot.setMotionControlMode(rokae::MotionControlMode::NrtCommand, ec);
@@ -32,7 +33,8 @@ int main() {
     std::atomic_bool running{true};
 
     // 接收状态数据的队列不会自动覆盖旧数据，可以通过循环读取的方法清除旧数据
-    while (robot.updateRobotState(chrono::steady_clock::duration::zero()));
+    while (robot.updateRobotState(chrono::steady_clock::duration::zero()))
+      ;
 
     // 打印末端位姿和关节角度到控制台
     std::thread readState([&] {
@@ -47,11 +49,11 @@ int main() {
     });
 
     // 开始一个运动线程
-    std::thread moveThread([&]{
+    std::thread moveThread([&] {
       robot.setOperateMode(rokae::OperateMode::automatic, ec);
       robot.setPowerState(true, ec);
       robot.moveReset(ec);
-      MoveAbsJCommand p1({0,0,0,0,0,0}), p2({0, M_PI/6, M_PI/3, 0, M_PI_2, 0});
+      MoveAbsJCommand p1({0, 0, 0, 0, 0, 0}), p2({0, M_PI / 6, M_PI / 3, 0, M_PI_2, 0});
       std::string id;
       robot.moveAppend({p1, p2}, id, ec);
       robot.moveStart(ec);
@@ -66,7 +68,7 @@ int main() {
     // 控制器停止发送
     robot.stopReceiveRobotState();
 
-  } catch(const std::exception &e) {
+  } catch (const std::exception &e) {
     print(std::cerr, e.what());
   }
   return 0;
@@ -78,7 +80,7 @@ void WaitRobot(BaseRobot *robot) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     error_code ec;
     auto st = robot->operationState(ec);
-    if(st == OperationState::idle || st == OperationState::unknown){
+    if (st == OperationState::idle || st == OperationState::unknown) {
       checking = false;
     }
   }

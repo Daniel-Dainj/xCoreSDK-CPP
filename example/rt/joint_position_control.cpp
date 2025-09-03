@@ -12,6 +12,7 @@
 #include <thread>
 #include "rokae/robot.h"
 #include "../print_helper.hpp"
+#include "../env/robot_config.hpp"
 
 using namespace rokae;
 
@@ -20,7 +21,7 @@ int main() {
   rokae::xMateRobot robot;
   std::error_code ec;
   try {
-    robot.connectToRobot("192.168.0.160", "192.168.0.100"); // 本机地址192.168.0.100
+    robot.connectToRobot(env::remoteIP, env::localIP);
   } catch (const std::exception &e) {
     print(std::cerr, e.what());
     return 0;
@@ -38,21 +39,20 @@ int main() {
     double time = 0;
 
     std::array<double, 6> jntPos{};
-    std::array<double, 6> q_drag_xm3 = {0, M_PI/6, M_PI/3, 0, M_PI/2, 0};
+    std::array<double, 6> q_drag_xm3 = {0, M_PI / 6, M_PI / 3, 0, M_PI / 2, 0};
 
-    std::function<JointPosition()> callback = [&, rtCon](){
-      if(init) {
+    std::function<JointPosition()> callback = [&, rtCon]() {
+      if (init) {
         jntPos = robot.jointPos(ec);
         init = false;
       }
       time += 0.001;
       double delta_angle = M_PI / 20.0 * (1 - std::cos(M_PI / 2.5 * time));
       JointPosition cmd = {{jntPos[0] + delta_angle, jntPos[1] + delta_angle,
-                            jntPos[2] - delta_angle,
-                            jntPos[3] + delta_angle, jntPos[4] - delta_angle,
-                            jntPos[5] + delta_angle}};
+                            jntPos[2] - delta_angle, jntPos[3] + delta_angle,
+                            jntPos[4] - delta_angle, jntPos[5] + delta_angle}};
 
-      if(time > 60) {
+      if (time > 60) {
         cmd.setFinished(); // 60秒后结束
       }
       return cmd;

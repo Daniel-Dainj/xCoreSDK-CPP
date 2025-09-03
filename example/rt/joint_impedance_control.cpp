@@ -12,31 +12,30 @@
 #include <thread>
 #include "rokae/robot.h"
 #include "../print_helper.hpp"
+#include "../env/robot_config.hpp"
 
 using namespace rokae;
 
 int main() {
   using namespace std;
   try {
-    std::string ip = "192.168.0.160";
     std::error_code ec;
-    rokae::xMateErProRobot robot(ip, "192.168.0.100"); // 本机地址192.168.0.100
-
-    robot.setOperateMode(rokae::OperateMode::automatic,ec);
+    rokae::xMateErProRobot robot(env::remoteIP, env::localIP);
+    robot.setOperateMode(rokae::OperateMode::automatic, ec);
     robot.setMotionControlMode(MotionControlMode::RtCommand, ec);
     robot.setPowerState(true, ec);
 
     auto rtCon = robot.getRtMotionController().lock();
 
     // 设置要接收数据。其中jointPos_m是本示例程序会用到的
-    robot.startReceiveRobotState(std::chrono::milliseconds(1), { RtSupportedFields::jointPos_m});
+    robot.startReceiveRobotState(std::chrono::milliseconds(1), {RtSupportedFields::jointPos_m});
 
     static bool init = true;
     double time = 0;
 
     std::array<double, 7> jntPos{};
     robot.getStateData(RtSupportedFields::jointPos_m, jntPos);
-    std::array<double,7> q_drag_xm7p = {0, M_PI/6, 0, M_PI/3, 0, M_PI/2, 0};
+    std::array<double, 7> q_drag_xm7p = {0, M_PI / 6, 0, M_PI / 3, 0, M_PI / 2, 0};
 
     // 从当前位置MoveJ运动到拖拽位姿
     rtCon->MoveJ(0.5, jntPos, q_drag_xm7p);
@@ -46,23 +45,24 @@ int main() {
     rtCon->startMove(RtControllerMode::jointImpedance);
 
     // 清除缓存数据
-    while(robot.updateRobotState(std::chrono::steady_clock::duration::zero()));
+    while (robot.updateRobotState(std::chrono::steady_clock::duration::zero()))
+      ;
 
     std::function<JointPosition(void)> callback = [&, rtCon] {
-      if(init) {
+      if (init) {
         robot.updateRobotState(std::chrono::milliseconds(1));
         robot.getStateData(RtSupportedFields::jointPos_m, jntPos);
         init = false;
       }
       time += 0.001;
-      double delta_angle = M_PI / 20.0 * (1 - std::cos(M_PI/4 * time));
+      double delta_angle = M_PI / 20.0 * (1 - std::cos(M_PI / 4 * time));
 
       JointPosition cmd(7);
-      for(unsigned i = 0; i < cmd.joints.size(); ++i) {
+      for (unsigned i = 0; i < cmd.joints.size(); ++i) {
         cmd.joints[i] = jntPos[i] + delta_angle;
       }
 
-      if(time > 60) {
+      if (time > 60) {
         cmd.setFinished(); // 60秒后结束
       }
       return cmd;

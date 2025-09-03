@@ -13,16 +13,16 @@
 #include "rokae/robot.h"
 #include "rokae/utility.h"
 #include "../print_helper.hpp"
+#include "../robot_config.hpp"
 
 using namespace rokae;
 
 int main() {
   using namespace std;
   try {
-    std::string ip = "192.168.0.160";
     std::error_code ec;
-    rokae::xMateErProRobot robot(ip, "192.168.0.180"); // ****   XMate 7-axis
-    robot.setOperateMode(rokae::OperateMode::automatic,ec);
+    rokae::xMateErProRobot robot(rokae::remoteIP, rokae::localIP); // ****   XMate 7-axis
+    robot.setOperateMode(rokae::OperateMode::automatic, ec);
     // 若程序运行时控制器已经是实时模式，需要先切换到非实时模式后再更改网络延迟阈值，否则不生效
     robot.setRtNetworkTolerance(20, ec);
     robot.setMotionControlMode(MotionControlMode::RtCommand, ec);
@@ -32,7 +32,7 @@ int main() {
 
     // 示例程序使用机型: xMateER7 Pro
     // 1. 从当前位置MoveJ运动到拖拽位置
-    std::array<double, 7> q_drag_xm7p = {0, M_PI/6, 0, M_PI/3, 0, M_PI/2, 0};
+    std::array<double, 7> q_drag_xm7p = {0, M_PI / 6, 0, M_PI / 3, 0, M_PI / 2, 0};
     rtCon->MoveJ(0.5, robot.jointPos(ec), q_drag_xm7p);
 
     // 2. 圆弧运动 (X-Y平面上)
@@ -41,7 +41,8 @@ int main() {
     Eigen::Matrix3d rot_start;
     Eigen::Vector3d trans_start, trans_aux, trans_end;
     Utils::arrayToTransMatrix(start.pos, rot_start, trans_start);
-    trans_end = trans_start; trans_aux = trans_start;
+    trans_end = trans_start;
+    trans_aux = trans_start;
     trans_aux[0] -= 0.28;
     trans_aux[1] -= 0.05;
     trans_end[1] -= 0.15;

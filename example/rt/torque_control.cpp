@@ -14,6 +14,7 @@
 #include "rokae/robot.h"
 #include "Eigen/Geometry"
 #include "../print_helper.hpp"
+#include "../robot_config.hpp"
 #include "rokae/utility.h"
 
 using namespace rokae;
@@ -28,7 +29,7 @@ void torqueControl(xMateErProRobot &robot) {
   auto rtCon = robot.getRtMotionController().lock();
   auto model = robot.model();
   error_code ec;
-  std::array<double,7> q_drag = {0, M_PI/6, 0, M_PI/3, 0, M_PI/2, 0 };
+  std::array<double, 7> q_drag = {0, M_PI / 6, 0, M_PI / 3, 0, M_PI / 2, 0};
 
   robot.stopReceiveRobotState();
   robot.startReceiveRobotState(std::chrono::milliseconds(1),
@@ -49,24 +50,24 @@ void torqueControl(xMateErProRobot &robot) {
   stiffness.bottomRightCorner(3, 3) << rotational_stiffness * Eigen::MatrixXd::Identity(3, 3);
   damping.setZero();
   damping.topLeftCorner(3, 3) << 0.0 * sqrt(translational_stiffness) *
-    Eigen::MatrixXd::Identity(3, 3);
+                                     Eigen::MatrixXd::Identity(3, 3);
   damping.bottomRightCorner(3, 3) << 0.0 * sqrt(rotational_stiffness) *
-    Eigen::MatrixXd::Identity(3, 3);
+                                         Eigen::MatrixXd::Identity(3, 3);
 
-  std::array<double, 16> init_position {};
+  std::array<double, 16> init_position{};
   Eigen::Matrix<double, 6, 7> jacobian;
   Utils::postureToTransArray(robot.posture(rokae::CoordinateType::flangeInBase, ec), init_position);
 
-  std::function<Torque(void)> callback = [&]{
+  std::function<Torque(void)> callback = [&] {
     using namespace RtSupportedFields;
-    static double time=0;
+    static double time = 0;
     time += 0.001;
     Eigen::Affine3d initial_transform(Eigen::Matrix4d::Map(init_position.data()).transpose());
     Eigen::Vector3d position_d(initial_transform.translation());
     Eigen::Quaterniond orientation_d(initial_transform.linear());
 
     std::array<double, 7> q{}, dq_m{}, ddq_c{};
-    std::array<double, 16> pos_m {};
+    std::array<double, 16> pos_m{};
 
     // 接收设置为true, 回调函数中可以直接读取
     robot.getStateData(jointPos_m, q);
@@ -114,7 +115,7 @@ void torqueControl(xMateErProRobot &robot) {
     Torque cmd(7);
     Eigen::VectorXd::Map(cmd.tau.data(), 7) = tau_d;
 
-    if(time > 30){
+    if (time > 30) {
       cmd.setFinished();
     }
     return cmd;
@@ -129,10 +130,9 @@ void torqueControl(xMateErProRobot &robot) {
 /**
  * @brief 发送0力矩. 力控模型准确的情况下, 机械臂应保持静止不动
  */
-template <unsigned short DoF>
-void zeroTorque(Cobot<DoF> &robot) {
+template <unsigned short DoF> void zeroTorque(Cobot<DoF> &robot) {
   error_code ec;
-  std::array<double,7> q_drag = {0, M_PI/6, 0, M_PI/3, 0, M_PI/2, 0 };
+  std::array<double, 7> q_drag = {0, M_PI / 6, 0, M_PI / 3, 0, M_PI / 2, 0};
   auto rtCon = robot.getRtMotionController().lock();
 
   // 运动到拖拽位置
@@ -140,13 +140,13 @@ void zeroTorque(Cobot<DoF> &robot) {
 
   // 控制模式为力矩控制
   rtCon->startMove(RtControllerMode::torque);
-  Torque cmd {};
+  Torque cmd{};
   cmd.tau.resize(DoF);
 
   std::function<Torque(void)> callback = [&]() {
-    static double time=0;
+    static double time = 0;
     time += 0.001;
-    if(time > 30){
+    if (time > 30) {
       cmd.setFinished();
     }
     return cmd;
@@ -159,9 +159,8 @@ void zeroTorque(Cobot<DoF> &robot) {
 
 int main() {
   try {
-    std::string ip = "192.168.0.160";
     std::error_code ec;
-    rokae::xMateErProRobot robot(ip, "192.168.0.100"); // ****   xMate 7-axis
+    rokae::xMateErProRobot robot(rokae::remoteIP, rokae::localIP); // ****   xMate 7-axis
     robot.setOperateMode(rokae::OperateMode::automatic, ec);
     robot.setMotionControlMode(MotionControlMode::RtCommand, ec);
     robot.setPowerState(true, ec);
